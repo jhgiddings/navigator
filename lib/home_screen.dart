@@ -281,13 +281,21 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text("Walk Navigator"),
           widgets: [
             _buildGpsIndicator(),
-            // Start/Stop Navigation button
+            // Start/Stop Navigation button - Large and visible!
             if (_gpxLoaded)
-              IconButton(
-                icon: Icon(_isNavigating ? Icons.stop : Icons.play_arrow),
-                tooltip: _isNavigating ? 'Stop Navigation' : 'Start Navigation',
-                color: _isNavigating ? Colors.red : Colors.green,
-                onPressed: _isNavigating ? _stopNavigation : _startNavigation,
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: _isNavigating ? Colors.red : Colors.green,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(_isNavigating ? Icons.stop : Icons.play_arrow),
+                  tooltip: _isNavigating ? 'Stop Navigation' : 'Start Navigation',
+                  color: Colors.white,
+                  iconSize: 32,
+                  onPressed: _isNavigating ? _stopNavigation : _startNavigation,
+                ),
               ),
             IconButton(
               icon: const Icon(Icons.file_open_outlined),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 
 import 'gpx_file.dart';
+import 'navigation.dart';
 
 class Map extends StatefulWidget {
   const Map({Key? key, required this.gpxFile, required this.mapController})
@@ -22,14 +23,17 @@ class MapState extends State<Map> {
   late Widget _waypointDistanceWidget;
   late Widget _waypointIconWidget;
   late Widget _waypointTextWidget;
-  late IconData _waypointIcon;
 
   static const double _waypointPanelHeight = 100.0;
   static const double _iconSize = 64.0;
   final Color? _waypointRowColor = Colors.green[200];
-  final String _waypointDescription = "";
 
+  // Navigation state (updated by Navigation service callbacks)
+  IconData _waypointIcon = Icons.north;
+  String _waypointDescription = "";
   double _distCurrentLocToWaypoint = 0.0;
+  int _currentWaypointIndex = 0;
+  int _totalWaypoints = 0;
 
 
   @override
@@ -114,6 +118,91 @@ class MapState extends State<Map> {
                     height: 1.2,
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  /// Handle navigation updates from Navigation service
+  void handleNavigationUpdate({
+    required double distance,
+    required String description,
+    required IconData icon,
+    required int waypointIndex,
+    required int totalWaypoints,
+    required GeoPoint currentLocation,
+  }) {
+    setState(() {
+      _distCurrentLocToWaypoint = distance;
+      _waypointDescription = description;
+      _waypointIcon = icon;
+      _currentWaypointIndex = waypointIndex;
+      _totalWaypoints = totalWaypoints;
+
+      // Rebuild waypoint widgets with new data
+      _waypointDistanceWidget = Container(
+        height: _waypointPanelHeight,
+        width: 120,
+        color: _waypointRowColor,
+        child: Center(
+          child: Text(
+            "${_distCurrentLocToWaypoint.toStringAsFixed(0)} m",
+            style: const TextStyle(
+                color: Colors.black,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                height: 1.0),
+          ),
+        ),
+      );
+
+      _waypointIconWidget = Container(
+        height: _waypointPanelHeight,
+        width: _iconSize,
+        color: _waypointRowColor,
+        child: Icon(
+          _waypointIcon,
+          color: Colors.black,
+          size: _iconSize,
+        ),
+      );
+
+      _waypointTextWidget = Expanded(
+        child: Container(
+          height: _waypointPanelHeight,
+          color: _waypointRowColor,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _waypointDescription.isEmpty
+                      ? "Follow the route"
+                      : _waypointDescription,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+                if (_totalWaypoints > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      "Waypoint ${_currentWaypointIndex + 1} of $_totalWaypoints",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

@@ -52,8 +52,117 @@ class _HomeScreenState extends State<HomeScreen> {
     _navigation = Navigation(
       gpxFile: _gpxFile,
       mapController: _mapController,
+      onNavigationUpdate: _handleNavigationUpdate,
+      onStateChanged: _handleNavigationStateChanged,
     );
     _checkGpsStatus();
+  }
+
+  // Navigation state tracking
+  bool _isNavigating = false;
+  NavigationState _navigationState = NavigationState.stopped;
+
+  /// Handle navigation updates from Navigation service
+  void _handleNavigationUpdate({
+    required double distance,
+    required String description,
+    required IconData icon,
+    required int waypointIndex,
+    required int totalWaypoints,
+    required GeoPoint currentLocation,
+  }) {
+    // Forward to MapState
+    final mapState = _mapKey.currentState;
+    if (mapState != null) {
+      mapState.handleNavigationUpdate(
+        distance: distance,
+        description: description,
+        icon: icon,
+        waypointIndex: waypointIndex,
+        totalWaypoints: totalWaypoints,
+        currentLocation: currentLocation,
+      );
+    }
+  }
+
+  /// Handle navigation state changes
+  void _handleNavigationStateChanged(NavigationState state) {
+    setState(() {
+      _navigationState = state;
+      _isNavigating = (state == NavigationState.active);
+    });
+
+    // Show completion dialog
+    if (state == NavigationState.completed) {
+      _showRouteCompletedDialog();
+    }
+  }
+
+  /// Start turn-by-turn navigation
+  void _startNavigation() async {
+    if (!_gpxLoaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please load a GPX file first'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _navigation.startNavigation();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Navigation started'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error starting navigation: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Stop navigation
+  void _stopNavigation() {
+    _navigation.stopNavigation();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Navigation stopped'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Show route completed dialog
+  void _showRouteCompletedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.celebration, color: Colors.green, size: 32),
+              SizedBox(width: 12),
+              Text('Route Completed!'),
+            ],
+          ),
+          content: const Text('Congratulations! You\'ve completed the route.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _checkGpsStatus() async {
@@ -172,6 +281,14 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text("Walk Navigator"),
           widgets: [
             _buildGpsIndicator(),
+            // Start/Stop Navigation button
+            if (_gpxLoaded)
+              IconButton(
+                icon: Icon(_isNavigating ? Icons.stop : Icons.play_arrow),
+                tooltip: _isNavigating ? 'Stop Navigation' : 'Start Navigation',
+                color: _isNavigating ? Colors.red : Colors.green,
+                onPressed: _isNavigating ? _stopNavigation : _startNavigation,
+              ),
             IconButton(
               icon: const Icon(Icons.file_open_outlined),
               tooltip: 'Import GPX File',
@@ -195,6 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _navigation.dispose();
     _mapController.dispose();
     super.dispose();
   }

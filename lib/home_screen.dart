@@ -87,9 +87,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Handle navigation state changes
   void _handleNavigationStateChanged(NavigationState state) {
+    print("🔄 Navigation state changed to: $state");
     setState(() {
       _navigationState = state;
       _isNavigating = (state == NavigationState.active);
+      print("   _isNavigating is now: $_isNavigating");
     });
 
     // Show completion dialog
@@ -100,6 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Start turn-by-turn navigation
   void _startNavigation() async {
+    print("🚀 START NAVIGATION BUTTON CLICKED!");
+    print("   GPX loaded: $_gpxLoaded");
+    print("   Current navigation state: $_navigationState");
+
     if (!_gpxLoaded) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -111,7 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
+      print("   Calling _navigation.startNavigation()...");
       await _navigation.startNavigation();
+      print("   ✓ Navigation started successfully");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Navigation started'),
@@ -131,6 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Stop navigation
   void _stopNavigation() {
+    print("⏹️ STOP NAVIGATION BUTTON CLICKED!");
     _navigation.stopNavigation();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

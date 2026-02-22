@@ -84,19 +84,23 @@ class Navigation {
   Future<void> startNavigation() async {
     if (_navStarted) return;
 
+    print("📍 Starting navigation...");
     _setState(NavigationState.starting);
 
     try {
       // Find the best starting waypoint
+      print("   Finding closest waypoint...");
       await findClosestWaypoint();
 
       _navStarted = true;
+      print("   Setting state to ACTIVE...");
       _setState(NavigationState.active);
 
       // Start the location update loop
+      print("   Starting location update loop...");
       await _processLocationUpdate();
 
-      print("Navigation started at waypoint $_waypointIndex");
+      print("✅ Navigation started at waypoint $_waypointIndex");
     } catch (e) {
       print("Error starting navigation: $e");
       _setState(NavigationState.stopped);
@@ -134,8 +138,12 @@ class Navigation {
 
   /// Set navigation state and notify listeners
   void _setState(NavigationState newState) {
+    print("🔄 Navigation._setState called: $newState");
+    print("   Previous state: $_state");
+    print("   Callback exists: ${onStateChanged != null}");
     _state = newState;
     onStateChanged?.call(newState);
+    print("   ✓ State changed and callback called");
   }
 
   /// RESTORED: Find closest waypoint to start navigation

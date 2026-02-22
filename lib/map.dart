@@ -40,46 +40,24 @@ class MapState extends State<Map> {
       // Create the list of children to be placed on the Stack widget
       _mapWidget = OSMFlutter(
         controller: widget.mapController,
-        initZoom: 15,
-        minZoomLevel: 5,
-        maxZoomLevel: 19,
-        // onLocationChanged: _updateLocation,
-        stepZoom: 1.0,
-        showContributorBadgeForOSM: true,
-        showZoomController: true,
-        trackMyPosition: true,
-        userLocationMarker: UserLocationMaker(
-          personMarker: const MarkerIcon(
-            icon: Icon(
-              Icons.navigation,
-              color: Colors.red,
-              size: 64,
-            ),
+        osmOption: OSMOption(
+          zoomOption: ZoomOption(
+            initZoom: 15,
+            minZoomLevel: 5,
+            maxZoomLevel: 19,
+            stepZoom: 1.0,
           ),
-          directionArrowMarker: const MarkerIcon(
-            icon: Icon(
-              color: Colors.red,
-              Icons.navigation,
-              size: 64,
-            ),
+          showContributorBadgeForOSM: true,
+          showDefaultInfoWindow: false,
+          userTrackingOption: UserTrackingOption(
+            enableTracking: true,
+            unFollowUser: false,
           ),
         ),
-        roadConfiguration: const RoadOption(
-          roadColor: Colors.red,
-          roadWidth: 8,
-        ),
-        markerOption: MarkerOption(
-            defaultMarker: const MarkerIcon(
-          icon: Icon(
-            Icons.north,
-            color: Colors.orange,
-            size: 56,
-          ),
-        )),
         onMapIsReady: (bool value) async {
           if (value) {
             Future.delayed(const Duration(seconds: 1), () async {
-              await widget.mapController.myLocation();
+              await widget.mapController.currentLocation();
               updateMapMarkerLayer();
             });
           }
@@ -155,7 +133,63 @@ class MapState extends State<Map> {
     return Column(
       children: [
         Expanded(
-          child: _mapWidget,
+          child: Stack(
+            children: [
+              _mapWidget,
+              // Zoom controls
+              Positioned(
+                right: 16,
+                top: 16,
+                child: Column(
+                  children: [
+                    FloatingActionButton(
+                      heroTag: 'zoom_in',
+                      mini: true,
+                      backgroundColor: Colors.white,
+                      onPressed: () async {
+                        try {
+                          double currentZoom = await widget.mapController.getZoom();
+                          await widget.mapController.setZoom(zoomLevel: currentZoom + 1);
+                        } catch (e) {
+                          print("Error zooming in: $e");
+                        }
+                      },
+                      child: const Icon(Icons.add, color: Colors.black),
+                    ),
+                    const SizedBox(height: 8),
+                    FloatingActionButton(
+                      heroTag: 'zoom_out',
+                      mini: true,
+                      backgroundColor: Colors.white,
+                      onPressed: () async {
+                        try {
+                          double currentZoom = await widget.mapController.getZoom();
+                          await widget.mapController.setZoom(zoomLevel: currentZoom - 1);
+                        } catch (e) {
+                          print("Error zooming out: $e");
+                        }
+                      },
+                      child: const Icon(Icons.remove, color: Colors.black),
+                    ),
+                    const SizedBox(height: 8),
+                    FloatingActionButton(
+                      heroTag: 'center_location',
+                      mini: true,
+                      backgroundColor: Colors.white,
+                      onPressed: () async {
+                        try {
+                          await _centerMapOnLocation();
+                        } catch (e) {
+                          print("Error centering on location: $e");
+                        }
+                      },
+                      child: const Icon(Icons.my_location, color: Colors.black),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         Container(
           decoration: BoxDecoration(
@@ -182,23 +216,74 @@ class MapState extends State<Map> {
   }
 
   _drawRoad(List<GeoPoint> points) async {
+    if (points.isEmpty) return;
+
+    try {
+    // Use a bright, highly visible color for the route
     RoadOption roadOption = const RoadOption(
-      roadColor: Colors.red,
+      roadColor: Color(0xFF6200EA), // Vibrant purple - high visibility on maps
       roadWidth: 8,
     );
 
-    // for (var i = 0; i < points.length; i++) {
-    //   List<GeoPoint> segment = [];
-    //   segment.add(points.first);
-    //   segment.add(points.last);
-    //   await widget.mapController.drawRoad(points[i], points[i + 1],
-    //       roadType: RoadType.foot, intersectPoint: segment, roadOption: roadOption);
-    // }
-    await widget.mapController.drawRoad(points.first, points.last,
+    print("Drawing road with ${points.length} points");
+
+    if (points.length >= 2) {
+      await widget.mapController.drawRoad(
+        points.first,
+        points.last,
         roadType: RoadType.foot,
         intersectPoint: points,
-        roadOption: roadOption);
-    await widget.mapController.setZoom(zoomLevel: 12);
+        roadOption: roadOption
+      );
+      print("Road drawn successfully");
+    }
+  } catch (e) {
+    print("Error drawing road: $e");
+  }
+  }
+
+  _zoomToFitRoute() async {
+    try {
+      if (widget.gpxFile.wayPoints.isEmpty) return;
+
+      // Calculate bounds
+      double minLat = widget.gpxFile.wayPoints[0].latitude;
+      double maxLat = widget.gpxFile.wayPoints[0].latitude;
+      double minLon = widget.gpxFile.wayPoints[0].longitude;
+      double maxLon = widget.gpxFile.wayPoints[0].longitude;
+
+      for (var wp in widget.gpxFile.wayPoints) {
+        if (wp.latitude < minLat) minLat = wp.latitude;
+        if (wp.latitude > maxLat) maxLat = wp.latitude;
+        if (wp.longitude < minLon) minLon = wp.longitude;
+        if (wp.longitude > maxLon) maxLon = wp.longitude;
+      }
+
+      // Calculate center
+      double centerLat = (minLat + maxLat) / 2;
+      double centerLon = (minLon + maxLon) / 2;
+      GeoPoint center = GeoPoint(latitude: centerLat, longitude: centerLon);
+
+      // Go to center
+      await widget.mapController.goToLocation(center);
+
+      // Set appropriate zoom level based on bounds
+      double latDiff = maxLat - minLat;
+      double lonDiff = maxLon - minLon;
+      double maxDiff = latDiff > lonDiff ? latDiff : lonDiff;
+
+      double zoom = 15.0;
+      if (maxDiff > 0.1) zoom = 12.0;
+      else if (maxDiff > 0.05) zoom = 13.0;
+      else if (maxDiff > 0.02) zoom = 14.0;
+      else if (maxDiff > 0.01) zoom = 15.0;
+      else zoom = 16.0;
+
+      await widget.mapController.setZoom(zoomLevel: zoom);
+      print("Zoomed to fit route at level $zoom");
+    } catch (e) {
+      print("Error zooming to fit route: $e");
+    }
   }
 
   _centerMapOnLocation() async {
@@ -228,35 +313,79 @@ class MapState extends State<Map> {
 
   updateMapMarkerLayer() async {
     if (widget.gpxFile.mapLoaded) {
+      print("updateMapMarkerLayer: mapLoaded is true");
+      print("Number of waypoints: ${widget.gpxFile.wayPoints.length}");
+      print("Number of track points: ${widget.gpxFile.trackGeoPoints.length}");
+
+      // Clear existing markers first
+      try {
+        await widget.mapController.removeMarkers(widget.gpxFile.wayGeoPoints);
+      } catch (e) {
+        print("Error clearing markers: $e");
+      }
+
+      // Add markers only for meaningful waypoints
       for (var i = 0; i < widget.gpxFile.wayPoints.length; i++) {
         WayPoint widgetWaypoint = widget.gpxFile.wayPoints[i];
         GeoPoint mapWaypoint = widgetWaypoint.geoPoint;
-        // if (i == 0) {
-        //   await widget.mapController.addMarker(waypoints[i],
-        //       markerIcon: const MarkerIcon(
-        //           icon: Icon(
-        //           Icons.flag,
-        //           size: 64,
-        //           color: Colors.red,
-        //       )));
-        // } else {
-        //   if (i == (waypoints.length - 1)) {
-        //     await widget.mapController.addMarker(waypoints[i],
-        //         markerIcon: const MarkerIcon(
-        //             icon: Icon(
-        //             Icons.flag,
-        //             size: 64,
-        //             color: Colors.green,
-        //         )));
-        //   } else {
-        await widget.mapController.addMarker(mapWaypoint,
-            markerIcon: const MarkerIcon(
-                icon: Icon(Icons.north, size: 64, color: Colors.black)),
-            angle: widgetWaypoint.headingToNextRadians);
-        //   }
-        // }
+
+        // Only show start, end, and waypoints with descriptions (meaningful points)
+        bool isStart = i == 0;
+        bool isEnd = i == (widget.gpxFile.wayPoints.length - 1);
+        bool hasMeaning = widgetWaypoint.description.isNotEmpty ||
+                         widgetWaypoint.symbol.isNotEmpty;
+
+        try {
+          if (isStart) {
+            // Start marker - larger green flag for high visibility
+            await widget.mapController.addMarker(mapWaypoint,
+                markerIcon: const MarkerIcon(
+                    icon: Icon(
+                    Icons.flag,
+                    size: 56,
+                    color: Color(0xFF00C853), // Vibrant green
+                )));
+          } else if (isEnd) {
+            // End marker - larger red flag for high visibility
+            await widget.mapController.addMarker(mapWaypoint,
+                markerIcon: const MarkerIcon(
+                    icon: Icon(
+                    Icons.flag,
+                    size: 56,
+                    color: Color(0xFFD50000), // Vibrant red
+                )));
+          } else if (hasMeaning) {
+            // Only show intermediate waypoints if they have descriptions/meaning
+            // These represent decision points, POIs, or turn points
+            await widget.mapController.addMarker(mapWaypoint,
+                markerIcon: const MarkerIcon(
+                    icon: Icon(
+                      Icons.location_on,
+                      size: 32,
+                      color: Color(0xFF6200EA), // Match route color
+                    )));
+          }
+          // Skip unmarked intermediate waypoints to reduce clutter
+        } catch (e) {
+          print("Error adding marker at index $i: $e");
+        }
       }
-      _drawRoad(widget.gpxFile.trackGeoPoints);
+
+      // Draw the route if we have track points
+      if (widget.gpxFile.trackGeoPoints.isNotEmpty) {
+        await _drawRoad(widget.gpxFile.trackGeoPoints);
+      } else if (widget.gpxFile.wayPoints.length > 1) {
+        // If no track points, draw line between waypoints
+        List<GeoPoint> waypointGeoPoints = widget.gpxFile.wayPoints.map((wp) => wp.geoPoint).toList();
+        await _drawRoad(waypointGeoPoints);
+      }
+
+      // Zoom to show all waypoints
+      if (widget.gpxFile.wayPoints.isNotEmpty) {
+        await _zoomToFitRoute();
+      }
+    } else {
+      print("updateMapMarkerLayer: mapLoaded is false");
     }
   }
 
@@ -283,7 +412,7 @@ class MapState extends State<Map> {
     return Icon(
       arrow,
       color: arrowColor,
-      size: _containerSize,
+      size: _iconSize,
     );
   }
 }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Walk Navigator Sample" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Sample Walking Route</name>
+    <desc>A sample walking route for testing the Navigator app</desc>
+  </metadata>
+  <trk>
+    <name>Sample Walk</name>
+    <trkseg>
+      <trkpt lat="47.4358055" lon="8.4737324">
+        <ele>408</ele>
+        <name>Start Point</name>
+      </trkpt>
+      <trkpt lat="47.4360123" lon="8.4740456">
+        <ele>410</ele>
+        <name>Waypoint 1</name>
+      </trkpt>
+      <trkpt lat="47.4363789" lon="8.4745678">
+        <ele>412</ele>
+        <name>Waypoint 2</name>
+      </trkpt>
+      <trkpt lat="47.4367234" lon="8.4750123">
+        <ele>415</ele>
+        <name>Waypoint 3</name>
+      </trkpt>
+      <trkpt lat="47.4370567" lon="8.4755789">
+        <ele>418</ele>
+        <name>Waypoint 4</name>
+      </trkpt>
+      <trkpt lat="47.4374123" lon="8.4760234">
+        <ele>420</ele>
+        <name>Waypoint 5</name>
+      </trkpt>
+      <trkpt lat="47.4377890" lon="8.4765456">
+        <ele>422</ele>
+        <name>Waypoint 6</name>
+      </trkpt>
+      <trkpt lat="47.4381234" lon="8.4770123">
+        <ele>425</ele>
+        <name>End Point</name>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

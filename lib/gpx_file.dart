@@ -218,7 +218,9 @@ class GpxFile {
             points[i].longitude,
             points[i + 1].latitude,
             points[i + 1].longitude);
-        points[i].headingToNextRadians = radians(points[i].headingToNextDegrees);
+        // Convert bearing (-180 to 180) to radians (0 to 2π)
+        double normalizedDegrees = (points[i].headingToNextDegrees + 360) % 360;
+        points[i].headingToNextRadians = radians(normalizedDegrees);
       }
 
       wayPoints = points;

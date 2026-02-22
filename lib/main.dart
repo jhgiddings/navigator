@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'home_screen.dart';
 import 'theme_mode_notifier.dart';
 
@@ -19,25 +18,24 @@ class AvaNavigator extends StatefulWidget {
 class AvaNavigatorState extends State<AvaNavigator>
     with WidgetsBindingObserver {
   late ThemeModeNotifier _themeModeNotifier;
-  late final WidgetsBinding _widgetsBinding;
-  late final FlutterWindow _window;
 
   @override
   void initState() {
-    _widgetsBinding = WidgetsBinding.instance;
-    _widgetsBinding.addObserver(this);
-    _window = _widgetsBinding.window;
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _themeModeNotifier = ThemeModeNotifier(
-      ValueNotifier<Brightness>(_window.platformDispatcher.platformBrightness),
+      ValueNotifier<Brightness>(
+        WidgetsBinding.instance.platformDispatcher.platformBrightness,
+      ),
     );
 
-    super.initState();
   }
 
   @override
   void didChangePlatformBrightness() {
     _themeModeNotifier.changeBrightness(
-        brightness: _window.platformDispatcher.platformBrightness);
+      brightness: WidgetsBinding.instance.platformDispatcher.platformBrightness,
+    );
     super.didChangePlatformBrightness();
   }
 

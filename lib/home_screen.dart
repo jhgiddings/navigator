@@ -20,7 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final scaffoldKey = GlobalKey();
   final AvaDrawer _drawer = const AvaDrawer();
-  final MapController _mapController = MapController();
+  final MapController _mapController = MapController(
+    initPosition: GeoPoint(latitude: 47.4358055, longitude: 8.4737324),
+  );
 
   late GpxFile _gpxFile;
   late Map _map;
@@ -201,17 +203,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_gpxFile.gpxName.isEmpty) {
       return Container(
         width: double.infinity,
-        color: Colors.orange[200],
+        color: const Color(0xFFFFE082), // Warm amber for info state
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: const [
-              Icon(Icons.info_outline, size: 20),
+              Icon(Icons.info_outline, size: 20, color: Color(0xFF795548)),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'No route loaded. Tap 📂 to import a GPX file.',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF795548),
+                  ),
                 ),
               ),
             ],
@@ -231,7 +237,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: double.infinity,
-      color: Colors.green[200],
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFB2FF59), // Bright green
+            const Color(0xFF69F0AE), // Cyan-green
+          ],
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -239,13 +252,20 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               _gpxFile.gpxName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1B5E20), // Dark green for contrast
+              ),
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               '$waypointCount waypoints • ${distanceKm.toStringAsFixed(1)} km • ~$estimatedMinutes min',
-              style: const TextStyle(fontSize: 12),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF2E7D32), // Medium green for contrast
+              ),
             ),
           ],
         ),

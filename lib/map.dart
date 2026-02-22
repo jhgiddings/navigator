@@ -135,6 +135,12 @@ class MapState extends State<Map> {
     required int totalWaypoints,
     required GeoPoint currentLocation,
   }) {
+    print("🔔 MapState.handleNavigationUpdate called!");
+    print("   Distance: ${distance.toStringAsFixed(1)} m");
+    print("   Description: $description");
+    print("   Waypoint: ${waypointIndex + 1} of $totalWaypoints");
+    print("   Icon: $icon");
+
     setState(() {
       _distCurrentLocToWaypoint = distance;
       _waypointDescription = description;

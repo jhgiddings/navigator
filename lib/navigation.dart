@@ -326,6 +326,12 @@ class Navigation {
 
     WayPoint currentWaypoint = gpxFile.wayPoints[_waypointIndex];
 
+    print("📢 Navigation calling UI update callback:");
+    print("   Distance: ${_distCurrentLocToWaypoint.toStringAsFixed(1)} m");
+    print("   Waypoint: ${_waypointIndex + 1} of ${gpxFile.wayPoints.length}");
+    print("   Description: ${currentWaypoint.description}");
+    print("   Symbol: ${currentWaypoint.symbol}");
+
     onNavigationUpdate?.call(
       distance: _distCurrentLocToWaypoint,
       description: currentWaypoint.description,
